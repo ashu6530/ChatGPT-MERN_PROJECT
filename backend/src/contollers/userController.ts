@@ -1,8 +1,10 @@
 import User from "../models/User.js";
 import { hash,compare } from 'bcrypt'
+import { createToken } from "../utils/tokenManager.js";
+import { Request,Response } from "express";
 // get request to get all the users
 
-export const getAllUsers = async (req, res) => {
+export const getAllUsers = async (req:Request, res:Response) => {
   try {
     const users = await User.find();
     return res.status(200).json({ message: "Ok", users });
@@ -13,7 +15,7 @@ export const getAllUsers = async (req, res) => {
 };
 
 // SingUp post request
-export const userSignup = async (req, res) => {
+export const userSignup = async (req:Request, res:Response) => {
   try {
     const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email })
@@ -25,6 +27,25 @@ export const userSignup = async (req, res) => {
       password : hashedPassword,
     });
     await user.save();
+
+    //create token and store cookie
+    res.clearCookie("auth_token",{
+      domain:"localhost",
+      httpOnly:true,
+      signed:true
+     })
+
+     const token = createToken(user._id.toString(),user.email,"7d");
+     const expires =new Date ();
+     expires.setDate(expires.getDate() + 7)
+     res.cookie("auth_token",token,{
+      path:'/',
+      domain:"localhost",
+      expires,
+      httpOnly:true,
+      signed:true
+     })
+     
     return res.status(200).json({ message: "Ok", id: user._id.toString()  });
   } catch (error) {
     console.log(error);
@@ -32,8 +53,8 @@ export const userSignup = async (req, res) => {
   }
 };
 
-
-export const userLogin = async (req, res) => {
+// Login user post request
+export const userLogin = async (req:Request, res:Response) => {
   try {
     const { email, password } = req.body;
      const user = await User.findOne({ email })
@@ -44,6 +65,25 @@ export const userLogin = async (req, res) => {
      if(!isPasswordCorrect){
       return res.status(403).send('Incorrect Password')
      }
+      
+     res.clearCookie("auth_token",{
+      domain:"localhost",
+      httpOnly:true,
+      signed:true
+     })
+
+     const token = createToken(user._id.toString(),user.email,"7d");
+     const expires =new Date ();
+     expires.setDate(expires.getDate() + 7)
+     res.cookie("auth_token",token,{
+      path:'/',
+      domain:"localhost",
+      expires,
+      httpOnly:true,
+      signed:true
+     })
+
+
     return res.status(200).json({ message: "Ok", id: user._id.toString()  });
   } catch (error) {
     console.log(error);
