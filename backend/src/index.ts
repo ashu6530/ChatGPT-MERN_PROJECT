@@ -1,13 +1,14 @@
-import express from "express";
-import { config } from 'dotenv'
-const app = express()
+import app from "./app.js"
+import { connectToDatabase } from "./db/connection.js"
+
+const PORT = process.env.PORT || 8000;
+
+connectToDatabase().then( ()=>{
+  app.listen(PORT,()=>console.log(`Server Started At PORT ${PORT} and Connected to Database`))
+}).catch((error)=>{
+    console.log(error);
+})
 
 
-//middleware for getting the data from the client 
-app.use(express.json())
 
-
-
-//connection and listners 
-app.listen(8000,()=>console.log(`Server Started At PORT 8000`))
 
