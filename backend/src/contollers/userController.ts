@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import { hash,compare } from 'bcrypt'
 import { createToken } from "../utils/tokenManager.js";
 import { Request,Response } from "express";
+import { log } from "console";
 // get request to get all the users
 
 export const getAllUsers = async (req:Request, res:Response) => {
@@ -46,7 +47,7 @@ export const userSignup = async (req:Request, res:Response) => {
       signed:true
      })
      
-    return res.status(200).json({ message: "Ok", id: user._id.toString()  });
+    return res.status(200).json({ message: "Ok", name:user.name ,email:user.email});
   } catch (error) {
     console.log(error);
     return res.status(400).json({ message: "ERROR", cause: error.message });
@@ -73,7 +74,7 @@ export const userLogin = async (req:Request, res:Response) => {
      })
 
      const token = createToken(user._id.toString(),user.email,"7d");
-     const expires =new Date ();
+     const expires = new Date ();
      expires.setDate(expires.getDate() + 7)
      res.cookie("auth_token",token,{
       path:'/',
@@ -84,9 +85,28 @@ export const userLogin = async (req:Request, res:Response) => {
      })
 
 
-    return res.status(200).json({ message: "Ok", id: user._id.toString()  });
+    return res.status(200).json({ message: "Ok", name:user.name ,email:user.email  });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ message: "ERROR", cause: error.message });
   }
 };
+
+export const verifyUser = async (req:Request, res:Response) => {
+  try {
+     const user = await User.findById( res.locals.jwtData.id)
+     if(!user){
+      return res.status(401).send("User not registered Or token malfunction ")
+     }
+
+     if(user._id.toString === res.locals.jwtData.id){
+      return res.status(401).send("Permission didn't match")
+     }
+  
+    return res.status(200).json({ message: "Ok", name:user.name ,email:user.email  });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({ message: "ERROR", cause: error.message });
+  }
+};
+
